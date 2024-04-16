@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>PID</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>	
+
+<div class="sliderContainer">
+
+	<div >
+		<div class="sliderGrp">
+			<label class="sliderLabel">Kp</label>
+			<input type="range" min="0.1001" max="2" step="0.1" class="slider propotionalSlider" id="propotionalSlider">
+		</div>
+		<div class="sliderGrp ">
+			<label class="sliderLabel">Kd</label>
+			<input type="range" min="0.0001" max="50" step="0.1" class="slider defrentaionSlider" id="defrentaionSlider" >
+		</div>
+	</div>
+
+
+	<div >
+		<div class="sliderGrp ">
+			<label class="sliderLabel">Change In position </label>
+			<input type="range" min="1" max="100" step="1" class="slider integratorSlider" id="integratorSlider">
+		</div>
+		<div class="sliderGrp ">
+			<label class="sliderLabel">Frame Rates</label>
+			<input type="range" min="4" max="48" step="2" class="slider frameRateSliderSlider" id="frameRateSlider">
+		</div>
+	</div>
+
+	<div class="sliderGrp ">
+		<label class="sliderLabel">Desired Position</label>
+		<input type="range" min="0" max="1346" step="1" class="slider setPointSliderSliderSlider" id="setPointSlider">
+	</div>
+</div>
+
+<div class="postitionChangeNote"><h4>Press 's' to disturb the position of Circle</h4></div>
+
+
+
+
+
+<script type="text/javascript" src="p5.min.js"></script>
+<script type="text/javascript">
+
+// GLOBAL VARIABLES
+const PI = Math.PI;
+let AxisCoords;
+function mouseCords()
+{
+	text('x: '+ mouseX + ' y: '+ mouseY, mouseX, mouseY);
+}
+
+function makePoint(x,y,thickness,color)
+{
+	c = color || 'black';
+	fill(c);
+	stroke(c);
+	circle(x,y,thickness);
+	fill('black');
+	stroke('black')
+}
+
+function CoordinateAxises(x,y,length,clr)
+{
+	let stokeClr = clr || 'black'; 
+	stroke(stokeClr);
+	line(x, y-length, x, y+length);
+	line(x-length, y, x+length, y);
+}
+
+function radToDeg(rad)
+{
+	return float(rad*(180/Math.PI));
+}
+
+// Objects
+
+class Obj
+{
+	constructor(radius,initPos,clr,fill)
+	{
+		this.radius = radius;
+		this.pos = initPos;
+		this.color = clr || 'black';
+		this.fillType = fill || 1; // 2-> fill background || 1-> only stroke
+		this.storkeThickness = 5;
+		this.setPointInc = 1;
+
+		// physics variables
+
+		this.velocity = createVector();
+
+
+		// PID CONTROLLER VARIABLES
+		this.Kp = 0.5;
+		this.Kd = 42;
+		this.Ki = 0;
+
+		this.setPoint = this.pos.x;
+		this.prevPos=this.pos.x;
+
+		this.integration=0;
+		this.defrentaion=0;
+		this.integrationLowLimit = -10;
+		this.integrationHighLimit = 10;
+	}
+
+	drawCircleAxix()
+	{
+		CoordinateAxises(this.pos.x, this.pos.y, this.radius);
+	}
+
+	draw()
+	{
+		if(this.fillType == 2)
+		{
+			fill(this.color);
+			stroke(this.color);
+		}else
+		{
+			noFill();
+			stroke(this.color);
+			strokeWeight(this.storkeThickness);
+		}
+		circle(this.pos.x, this.pos.y, this.radius*2);
+		this.drawCircleAxix();
+	}
+
+	controller(error)
+	{
+		let propotional = error;
+		this.defrentaion = -((this.pos.x-this.prevPos)/(deltaTime));
+		this.prevPos = this.pos.x;
+		return (this.Kp*propotional+this.Kd*this.defrentaion);
+	}
+
+	update()
+	{
+		this.draw();
+		this.pos.x += this.velocity.x;
+		this.pos.y += this.velocity.y;
+		this.setPoint = setPointSlider.value();
+		this.velocity.x += this.controller(this.setPoint-this.pos.x);
+		this.Kp = propotional.value();
+		this.Ki = integrator.value();
+		this.Kd = defrentaion.value();
+	}
+}
+
+
+// Objects variables
+let obj;
+let propotional,defrentaion;
+let setPointSlider
+
+function setup()
+{	createCanvas(displayWidth-20, displayHeight-(0.4*displayHeight));
+	frameRate(30);
+
+	obj=new Obj(50,createVector(width/2, height/2),'deepskyblue', 2);
+
+	AxisCoords =createVector(width/2, height/2);
+
+	// sliders
+	propotional = select("#propotionalSlider");
+	defrentaion = select("#defrentaionSlider");
+	integrator = select("#integratorSlider");
+	setPointSlider = select("#setPointSlider");
+	frameRateSlider = select("#frameRateSlider");
+
+
+	console.log(propotional);
+}
+
+function draw()
+{
+	frameRate(frameRateSlider.value());
+	background('white');
+	obj.update();
+	CoordinateAxises(setPointSlider.value(),AxisCoords.y,150);
+	textSize(24);
+	text(`Kp = ${obj.Kp} , Kd = ${obj.Kd}, Change In Pos = ${integrator.value()} , Frames = ${frameRateSlider.value()} `,50,50);
+}
+
+
+// function mousePressed()
+// {
+// 	if(mouseY < height){
+// 		AxisCoords.x = mouseX;
+// 		setPointSlider.elt.value = mouseX;
+// 	}
+
+// }
+
+// function mouseMoved()
+// {
+// 	if(mouseY < height)
+// 	{
+// 		AxisCoords.x = mouseX;
+// 		setPointSlider.elt.value = mouseX;
+// 	}
+// }
+
+function keyPressed() {
+	if(key == 'l')
+	{
+		console.log(obj);
+		console.log(deltaTime);
+	}
+	if(key == 's')
+	{
+		obj.pos.x += integrator.value();
+	}
+}
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
+
+
+<!-- 
+
+	LEARN COMPLETE PID CONTROLL
+
+ -->
