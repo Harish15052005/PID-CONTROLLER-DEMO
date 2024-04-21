@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>PID</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+
+</head>
+<body>	
+
+
+<div class="sliderContainer">
+
+	<div >
+		<div class="sliderGrp">
+			<label class="sliderLabel">Kp</label>
+			<input type="range" min="0" max="2" step="0.05" class="slider propotionalSlider" id="setProportionalSlider" value="0">
+		</div>
+		<div class="sliderGrp ">
+			<label class="sliderLabel">Kd</label>
+			<input type="range" min="0" max="25" step="0.05" class="slider defrentaionSlider" id="setDerivativeSlider" value="0">
+		</div>
+		<div class="sliderGrp ">
+			<label class="sliderLabel">Ki</label>
+			<input type="range" min="0" max="10" step="0.05" class="slider defrentaionSlider" id="setIntegratorlider" value="0">
+		</div>
+	</div>
+
+
+	<div >
+		<div class="sliderGrp ">
+			<label class="sliderLabel">Frame Rates</label>
+			<input type="range" min="4" max="35" step="2" class="slider frameRateSliderSlider" id="frameRateSlider">
+		</div>
+	</div>
+
+	<div class="sliderGrp ">
+		<label class="sliderLabel">Desired Position</label>
+		<input type="range" min="15" max="165" step="1" class="slider setPointSliderSliderSlider" id="setAngleSlider" value="15">
+	</div>
+</div>
+
+
+<script type="text/javascript" src="p5.min.js"></script>
+<script type="text/javascript">
+
+// GLOBAL VARIABLES
+const PI = Math.PI;
+let AxisCoords;
+function mouseCords()
+{
+	text('x: '+ mouseX + ' y: '+ mouseY, mouseX, mouseY);
+}
+
+function makePoint(x,y,thickness,color)
+{
+	c = color || 'black';
+	fill(c);
+	stroke(c);
+	circle(x,y,thickness);
+	fill('black');
+	stroke('black')
+
+}
+
+
+function radToDeg(rad)
+{
+	return float(rad*(180/Math.PI));
+}
+
+function degToRad(deg)
+{
+	return float(deg*(Math.PI/180))
+}
+
+// Objects
+
+
+
+// Objects variables
+let setAngleSlider, setProportionalSlider, setDerivativeSlider;
+let origin;
+
+class LineObj
+{
+	constructor(length,origin ,clr , thickness)
+	{
+		this.length= length;
+		this.origin=origin
+		this.color = clr || "black";
+		this.thickness = thickness || 4;
+
+		this.theta = 9;
+		this.error=0;
+		this.prevError = this.error
+		this.endPoint = createVector(this.length,0);
+
+		this.prevTime=0;
+
+		this.Kp=0; this.Kd=0, this.Ki=0;
+		this.setAngle=0;
+
+	}
+
+	draw()
+	{
+		stroke(this.color);
+		strokeWeight(this.thickness)
+		translate(this.origin.x, this.origin.y);
+		line(0,0,this.endPoint.x, this.endPoint.y)
+
+		// drawing setAngle Line
+		stroke("deepskyblue");
+		strokeWeight(2)
+		line(0,0,this.length*cos(360-this.setAngle),this.length*sin(360-this.setAngle))
+		stroke("black");
+	}
+
+	controller()
+	{
+		let currentTime = Date.now()
+		let dt = (currentTime-this.prevTime);
+		let pTerm = this.error;
+		let dTerm = (this.error - this.prevError) / dt;
+		let iTerm = (this.error + this.prevError) * dt;
+
+		if(this.error < 1)
+		{
+			if(iTerm > 1){
+				iTerm = 1;
+			}
+			else if (iTerm < -1)
+			{
+				let iTerm = -1;
+			}
+
+		}
+		else{
+			iTerm = 0;
+		}
+
+		let output = this.Kp*pTerm - this.Kd*dTerm + this.Ki*iTerm;
+
+		if(output>5){
+			output =5;
+		}
+		else if (output < -5)
+		{
+			output = -5;
+		}
+
+		this.prevError = this.error;
+		this.prevTime = currentTime;
+		
+		return output;
+	}
+
+	update()
+	{	
+
+		this.endPoint.x = this.length*cos(360-this.theta);
+		this.endPoint.y = this.length*sin(360-this.theta);
+
+
+		this.error = this.setAngle-this.theta
+		this.theta += this.controller()
+
+
+
+		this.draw()
+	}
+}
+
+let Lineobj;
+
+function setup()
+{	
+	createCanvas(displayWidth*0.5, displayHeight-(0.4*displayHeight));
+	
+	angleMode(DEGREES);
+	frameRate(10);
+	
+	setAngleSlider = select("#setAngleSlider");
+	setProportionalSlider = select("#setProportionalSlider");
+	setDerivativeSlider = select("#setDerivativeSlider");
+	setFrameRateSlider = select("#frameRateSlider");
+	setIntegratorlider = select("#setIntegratorlider");
+	
+	origin = createVector(width/2, height/2);
+
+
+	Lineobj = new LineObj(100,origin);
+
+}	
+
+
+function draw()
+{
+	frameRate(setFrameRateSlider.value())
+	background("white")
+	makePoint(origin.x, origin.y, 5, "red")
+
+	Lineobj.update()
+	Lineobj.setAngle = setAngleSlider.value()
+	Lineobj.Kp = setProportionalSlider.value();
+	Lineobj.Kd = setDerivativeSlider.value();
+	Lineobj.Ki = setIntegratorlider.value();
+
+
+	strokeWeight(2)
+	textSize(24);
+	text(`Kp = ${Lineobj.Kp} , Ki = ${Lineobj.Ki},Kd = ${Lineobj.Kd}, Frame Rate :- ${setFrameRateSlider.value()}`,-origin.x,-origin.y + 50);
+	translate(origin.x,origin.y);
+
+	
+}
+
+
+
+
+
+function keyPressed() {
+	if(key == 'l')
+	{
+		console.log(Lineobj)
+	}
+}
+
+
+
+
+
+
+
+</script>
+</body>
+</html>

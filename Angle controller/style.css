@@ -1,0 +1,42 @@
+*{
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+canvas
+{	
+	margin-left: 10px;
+	border: 4px solid black;
+	position: absolute;
+	bottom: 5vh;
+	left: 0;
+}
+
+.sliderContainer
+{
+	width: 100vw;
+	height: auto;
+	padding-top: 5vh;
+	padding-bottom: 5vh;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-evenly;
+	align-items: center;
+
+	font-size: 1.4rem;
+	font-weight: bolder;
+}
+
+.sliderGrp {
+	display: flex;
+	justify-content: space-evenly;
+	align-items: center;
+}
+.postitionChangeNote{
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	
+}
